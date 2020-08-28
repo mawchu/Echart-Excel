@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Title</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  </head>
+  <body>
+    <div id="main" style="width: 600px;height:400px;"></div>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
+    <script src="./echarts/echarts.min.js"></script>
+    <script src="./xlsx/xlsx.full.min.js"></script>
+    <script>
+        //獲取excel資料
+        // read Excel file and convert to json format using fetch
+        fetch('./chart.xlsx').then(function (res) {
+            /* get the data as a Blob */
+            if (!res.ok) throw new Error("fetch failed");
+            return res.arrayBuffer();
+        })
+        .then(function (ab) {
+            /* parse the data when it is received */
+            var data = new Uint8Array(ab);
+            var workbook = XLSX.read(data, {
+            type: "array"
+        });
+            /* *****************************************************************
+            * DO SOMETHING WITH workbook: Converting Excel value to Json       *
+            ********************************************************************/
+            var first_sheet_name = workbook.SheetNames[0];
+            /* Get worksheet */
+            var worksheet = workbook.Sheets[first_sheet_name];
+            var _JsonData = XLSX.utils.sheet_to_json(worksheet, { raw: true });
+            /************************ End of conversion ************************/
+            console.log(_JsonData);
+            var arr =[];
+            var arr1 = [];
+            _JsonData.forEach(function(e){
+                console.log(e)
+                
+                arr.push(e['日期'])
+                
+            })
+            console.log(arr)
+            arr.forEach(function(e){
+                console.log(ExcelDateToJSDate(e).format("yyyy-MM-dd"))
+                var data = ExcelDateToJSDate(e).format("yyyy-MM-dd");
+                arr1.push(data)
+            })
+            console.log(arr1)
+
+        });
+
+
+        function ExcelDateToJSDate(serial) {
+            var utc_days  = Math.floor(serial - 25569);
+            var utc_value = utc_days * 86400;                                        
+            var date_info = new Date(utc_value * 1000);
+
+            var fractional_day = serial - Math.floor(serial) + 0.0000001;
+
+            var total_seconds = Math.floor(86400 * fractional_day);
+
+            var seconds = total_seconds % 60;
+
+            total_seconds -= seconds;
+
+            var hours = Math.floor(total_seconds / (60 * 60));
+            var minutes = Math.floor(total_seconds / 60) % 60;
+
+            return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
+        }
+        // function ExcelDateToJSDate(date) {
+        //     return new Date(Math.round((date - 25569)*86400*1000));
+        // }
+
+
+        Date.prototype.format = function(fmt) { 
+            var o = { 
+                "M+" : this.getMonth()+1,                 //月份 
+                "d+" : this.getDate(),                    //日 
+                "h+" : this.getHours(),                   //小时 
+                "m+" : this.getMinutes(),                 //分 
+                "s+" : this.getSeconds(),                 //秒 
+                "q+" : Math.floor((this.getMonth()+3)/3), //季度 
+                "S"  : this.getMilliseconds()             //毫秒 
+            }; 
+            if(/(y+)/.test(fmt)) {
+                    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length)); 
+            }
+            for(var k in o) {
+                if(new RegExp("("+ k +")").test(fmt)){
+                    fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+                }
+            }
+            return fmt; 
+        }  
+        console.log(ExcelDateToJSDate(43834).format("yyyy-MM-dd"))
+        console.log(ExcelDateToJSDate(43834))
+    </script>
+    <script src="./js/echarts.js"></script>
+  </body>
+</html>

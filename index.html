@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Title</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  </head>
+  <body>
+    <div id="main" style="width: 600px;height:400px;"></div>
+    <!-- <label for="myinput">上傳檔案</label>
+    <input accept=".xlsx,.xls" id="myinput" type="file" /> -->
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script> -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <!-- <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.0.min.js"></script> -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
+    <script src="./echarts/echarts.min.js"></script>
+    <script src="./xlsx/xlsx.full.min.js"></script>
+
+
+
+    <!-- <script>
+    // 生成一個列物件組成的陣列
+    function make_cols(refstr) {
+        let o = [], C = XLSX.utils.decode_range(refstr).e.c + 1;
+        for(var i = 0; i < C; ++i) o[i] = {name:XLSX.utils.encode_col(i), key:i}
+        return o;
+    };
+
+    function handleExcelFileChange(file) {
+        const files = file.target.files;
+        if(files && files[0]) {
+            const reader = new FileReader();
+            const rABS = !!reader.readAsBinaryString;
+            reader.onload = (e) => {
+                const bstr = e.target.result;
+                const wb = XLSX.read(bstr, {type:rABS ? 'binary' : 'array'});
+                /* Get first worksheet */
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                /* Convert array of arrays */
+                const data = XLSX.utils.sheet_to_json(ws);
+                // 上面這個sheet_to_json可配置的引數 {header:1, raw:true, cellDates:true}
+
+                console.log(ws, data, make_cols(ws['!ref']))
+            };
+            if(rABS) reader.readAsBinaryString(files[0]); else reader.readAsArrayBuffer(files[0]);
+            }
+        }
+
+        const input = document.getElementById('myinput');
+    input.addEventListener('change', handleExcelFileChange);
+
+    </script> -->
+    <script type="text/javascript">
+        // 基于准备好的dom，初始化echarts实例
+        var myChart = echarts.init(document.getElementById('main'));
+
+        // 指定图表的配置项和数据
+        var option = {
+            title: {
+                text: '折线图堆叠'
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data: ['邮件营销', '联盟广告', '视频广告', '直接访问', '搜索引擎']
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            toolbox: {
+                feature: {
+                    saveAsImage: {}
+                }
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [
+                {
+                    name: '邮件营销',
+                    type: 'line',
+                    stack: '总量',
+                    data: [120, 132, 101, 134, 90, 230, 210]
+                },
+                {
+                    name: '联盟广告',
+                    type: 'line',
+                    stack: '总量',
+                    data: [220, 182, 191, 234, 290, 330, 310]
+                },
+                {
+                    name: '视频广告',
+                    type: 'line',
+                    stack: '总量',
+                    data: [150, 232, 201, 154, 190, 330, 410]
+                },
+                {
+                    name: '直接访问',
+                    type: 'line',
+                    stack: '总量',
+                    data: [320, 332, 301, 334, 390, 330, 320]
+                },
+                {
+                    name: '搜索引擎',
+                    type: 'line',
+                    stack: '总量',
+                    data: [820, 932, 901, 934, 1290, 1330, 1320]
+                }
+            ]
+        };
+
+
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+
+        
+    </script>
+
+  </body>
+</html>
