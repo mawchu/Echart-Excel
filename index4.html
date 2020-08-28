@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Title</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <style>
+        #main{
+            max-width: 960px;
+            height:400px;
+            margin:0 auto;
+        }
+        #main canvas{
+            width: 100%;
+            height:400px;
+        }
+    </style>
+  </head>
+  <body>
+    <div id="main"></div>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
+    <script src="./echarts/echarts.min.js"></script>
+    <script src="./xlsx/xlsx.full.min.js"></script>
+    <script>
+        
+        let xData = [];
+        let yData1 = []; //市值NTD
+        let arr = [];//將日期丟進來
+        let arr1 = [];//將excel日期轉換後丟進來
+
+        //獲取excel資料
+        // read Excel file and convert to json format using fetch
+        fetch('./保守型投資組合比股市抗跌.xlsx').then(function (res) {
+            /* get the data as a Blob */
+            if (!res.ok) throw new Error("fetch failed");
+            return res.arrayBuffer();
+        })
+        .then(function (ab) {
+            /* parse the data when it is received */
+            let data = new Uint8Array(ab);
+            let workbook = XLSX.read(data, {
+                type: "array"
+            });
+            /* *****************************************************************
+            * DO SOMETHING WITH workbook: Converting Excel value to Json       *
+            ********************************************************************/
+            let first_sheet_name = workbook.SheetNames[0];
+            /* Get worksheet */
+            let worksheet = workbook.Sheets[first_sheet_name];
+            let _JsonData = XLSX.utils.sheet_to_json(worksheet, { raw: true });
+            console.log(_JsonData)
+            //獲得特定位置的欄位的值
+            let cell = worksheet['A1'].v;
+            console.log(cell)   
+
+
+            _JsonData.forEach(function(e,i){
+                // console.log(`第${i}個`, e['__EMPTY_2'])
+                if(i > 9){
+                    let dateFmt = ExcelDateToJSDate(e['增長']).format("yyyy-MM-dd")
+                    xData.push(dateFmt)//抓到日期
+                    let data = e['__EMPTY_2'];
+                    yData1.push(data)//抓到百分比
+                }
+            })
+            console.log(xData)//百分比array
+            console.log(yData1)//百分比array
+
+            // var range = XLSX.utils.decode_range(workbook.Sheets[first_sheet_name]['!ref']);
+            // range.s.c = 1; // 0 == XLSX.utils.decode_col("A") 起始欄位
+            // range.e.c = 3; // 6 == XLSX.utils.decode_col("G") 結束欄位
+            // var new_range = XLSX.utils.encode_range(range);
+            // var excelInJSON = XLSX.utils.sheet_to_json(workbook.Sheets[first_sheet_name], {blankRows: false, defval: '', range: new_range});
+            // console.log('123',excelInJSON)
+
+            //獲取特定範圍欄位的值
+            var range = XLSX.utils.decode_range(workbook.Sheets[first_sheet_name]['!ref']);
+            range.s.r = 3; //起始row
+            range.e.r = 5; //結束row
+            for(var R = range.s.r; R <= range.e.r; ++R) {//row
+                for(var C = range.s.c; C <= range.e.c; ++C) {//cell
+                    var cell_address = {c:C, r:R};
+                    /* if an A1-style address is needed, encode the address */
+                    var cell_ref = XLSX.utils.encode_cell(cell_address);
+                    // console.log(cell_ref ,worksheet[cell_ref].v)
+                }
+            }
+            
+            /************************ End of conversion ************************/
+            // console.log(_JsonData);
+            
+            // _JsonData.forEach(function(e){
+            //     // console.log(e) 
+            //     arr.push(e['日期'])
+            // })
+            // console.log(arr)
+            // arr.forEach(function(e){
+            //     // console.log(ExcelDateToJSDate(e).format("yyyy-MM-dd"))
+            //     let data = ExcelDateToJSDate(e).format("yyyy-MM-dd");
+            //     arr1.push(data)
+            // })
+            // xData = arr1;
+            // _JsonData.forEach((e)=>{
+            //     console.log(e['買進'])
+            //     yDataBuy.push(e['買進'])
+            //     yDataSell.push(e['賣出'])
+            // })
+
+        });
+
+        // excel日期字串轉換
+        function ExcelDateToJSDate(serial) {
+            let utc_days  = Math.floor(serial - 25569);
+            let utc_value = utc_days * 86400;                                        
+            let date_info = new Date(utc_value * 1000);
+
+            let fractional_day = serial - Math.floor(serial) + 0.0000001;
+
+            let total_seconds = Math.floor(86400 * fractional_day);
+
+            let seconds = total_seconds % 60;
+
+            total_seconds -= seconds;
+
+            let hours = Math.floor(total_seconds / (60 * 60));
+            let minutes = Math.floor(total_seconds / 60) % 60;
+
+            return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
+        }
+        // excel日期字串轉換 簡潔版本
+        // function ExcelDateToJSDate(date) {
+        //     return new Date(Math.round((date - 25569)*86400*1000));
+        // }
+
+        Date.prototype.format = function(fmt) { 
+            let o = { 
+                "M+" : this.getMonth()+1,                 //月份 
+                "d+" : this.getDate(),                    //日 
+                "h+" : this.getHours(),                   //小时 
+                "m+" : this.getMinutes(),                 //分 
+                "s+" : this.getSeconds(),                 //秒 
+                "q+" : Math.floor((this.getMonth()+3)/3), //季度 
+                "S"  : this.getMilliseconds()             //毫秒 
+            }; 
+            if(/(y+)/.test(fmt)) {
+                    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length)); 
+            }
+            for(let k in o) {
+                if(new RegExp("("+ k +")").test(fmt)){
+                    fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+                }
+            }
+            return fmt; 
+        }  
+
+
+
+    </script>
+    <script src="./js/echarts2.js"></script>
+    <script>
+
+    </script>
+  </body>
+</html>
