@@ -40,6 +40,7 @@
         // read Excel file and convert to json format using fetch
         fetch('./保守型投資組合比股市抗跌.xlsx').then(function (res) {
             /* get the data as a Blob */
+            console.log()
             if (!res.ok) throw new Error("fetch failed");
             return res.arrayBuffer();
         })
