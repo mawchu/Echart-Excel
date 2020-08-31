@@ -18,11 +18,37 @@
             width: 100%;
             height:400px;
         }
+        .btn-primary{
+            background-color: #16b6d2;
+            border:1px solid #16b6d2;
+        }
+        .btn-primary:hover{
+            background-color: #078297;
+            border:1px solid #078297;
+        }
+        .btn-primary.active{
+            background-color: #ff6f80 !important;
+            border:1px solid #ff6f80 !important;
+        }
     </style>
   </head>
   <body>
       <div id="app">
-        <div id="main"></div>
+        <div id="main">
+        </div>
+        <div class="d-flex flex-wrap justify-content-center">
+            <button class="btn btn-primary mr-1" @click="changeMonth(1), active = 1" :class="{'active': active === 1}">1m</button>
+            <button class="btn btn-primary mr-1" @click="changeMonth(3), active = 2" :class="{'active': active === 2}">3m</button>
+            <button class="btn btn-primary mr-1" @click="changeMonth(6), active = 3" :class="{'active': active === 3}">6m</button>
+            <button class="btn btn-primary mr-1" @click="changeYear(1), active = 4" :class="{'active': active === 4}">1year</button>
+            <button class="btn btn-primary mr-1" @click="allData(), active = 5" :class="{'active': active === 5}">All</button>
+            <select class="form-control px-1 col-12 col-sm-2 mr-1" name="year" v-model="selectYear" @change="active = 0">
+                <option value="" disabled>請選擇年份</option>
+                <option v-for="(item, index) in selectYears" :value="item">{{ item }}</option>
+            </select>
+        </div>
+        
+
       </div>
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -35,40 +61,35 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
     <script src="./echarts/echarts.min.js"></script>
     <script src="./xlsx/xlsx.full.min.js"></script>
+    <script src="./moment/moment.js"></script>
+
     <script>
         let app = new Vue({
             el:'#app',
             data:{
+                // 整筆資料
+                xDataAll:[],
+                yData1All:[],
+                yData2All:[],
+                yWealth1All:[],
+                yWealth2All:[],
+
+                // 篩選後資料
                 xData:[],
                 yData1:[],
                 yData2:[],
-                myChart:null
+                yWealth1:[],
+                yWealth2:[],
+                myChart:null,
+                
+                selectYears:[],
+                selectYear:'',
+                active:5
             },
             mounted(){
 
                 let vm = this;
                 vm.myChart = echarts.init(document.getElementById('main'));
-                //日期轉換
-                Date.prototype.format = function(fmt) { 
-                        let o = { 
-                            "M+" : this.getMonth()+1,                 //月份 
-                            "d+" : this.getDate(),                    //日 
-                            "h+" : this.getHours(),                   //小时 
-                            "m+" : this.getMinutes(),                 //分 
-                            "s+" : this.getSeconds(),                 //秒 
-                            "q+" : Math.floor((this.getMonth()+3)/3), //季度 
-                            "S"  : this.getMilliseconds()             //毫秒 
-                        }; 
-                        if(/(y+)/.test(fmt)) {
-                                fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length)); 
-                        }
-                        for(let k in o) {
-                            if(new RegExp("("+ k +")").test(fmt)){
-                                fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
-                            }
-                        }
-                        return fmt; 
-                    }
                 //fetch方法改成axios
                 axios.get('./保守型投資組合比股市抗跌.xlsx',{responseType: 'arraybuffer'})
                     .then((res)=>{
@@ -91,25 +112,44 @@
                         let cell = worksheet['A1'].v;
                         console.log(cell) 
                         _JsonData.forEach(function(e,i){
-                            // console.log(`第${i}個`, e['__EMPTY_2'])
-                            if(i > 9){
-                                let dateFmt = vm.ExcelDateToJSDate(e['增長']).format("yyyy-MM-dd")
-                                vm.xData.push(dateFmt)//抓到日期
-                                let data = e['__EMPTY_2'];
+                            if(i > 9){//從Excel第10行開始 如有更改改這邊!!!!!!!
+                                let dateFmt = moment(vm.ExcelDateToJSDate(e['增長'])).format('YYYY-MM-DD')
+                                vm.xDataAll.push(dateFmt)//抓到日期
+                                let data1 = e['__EMPTY_2'];
                                 let data2 = e['__EMPTY_7'];
-
-                                vm.yData1.push(data)//抓到百分比
-                                vm.yData2.push(data2)//抓到百分比
-
+                                let wData1 = e['__EMPTY_1'];
+                                let wData2 = e['__EMPTY_6'];
+                                vm.xData = vm.xDataAll;
+                                vm.yData1All.push(data1); //抓到百分比
+                                vm.yData1 = vm.yData1All;
+                                vm.yData2All.push(data2); //抓到百分比
+                                vm.yData2 = vm.yData2All;
+                                vm.yWealth1All.push(wData1);
+                                vm.yWealth1 = vm.yWealth1All;
+                                vm.yWealth2All.push(wData2);
+                                vm.yWealth2 = vm.yWealth2All;
                             }
                         })
-                        console.log(vm.xData)//百分比array
-                        console.log(vm.yData1)//百分比array  
+                        // console.log(vm.xData)//百分比array
+                        // console.log(vm.yData1)//百分比array  
 
                         vm.drawChart();
+                        let array = []
 
+                        //拿到資料的年份
+                        vm.xData.forEach(function(e,i){
+                            if(moment(e).year() === vm.selectYear){
+                                console.log(e,i)
+                            }
+                            array.push(moment(e).year())
+                        })
+                        vm.selectYears = array.filter(function(e,i,a){
+                            return a.indexOf(e) === i;
+                        })
+                        
                     })
-
+                    // console.log(moment()._d)
+                    
                    
             },
             methods:{
@@ -135,26 +175,22 @@
                                 lable:{
                                     borderColor:'#16b6d2'
                                 },
-                                // formatter:'{b}<br />\
-                                //                   <span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color:#5374E9"></span>\
-                                //                   {a0}：{c0}<br />\
-                                //                   <span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color:#FFA123"></span>\
-                                //                   {a1}：{c1}%<br />\
-                                //                   <span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color:#37C2CF"></span>\
-                                //                   {a2}：{c2}%<br />\
-                                //                   <span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color:#F97979"></span>\
-                                //                   {a3}：{c3}%<br />',
                                 formatter: function (params) {
                                     var html=params[0].name+"<br>";
+                                    var dataIndex = params[1].dataIndex;//抓取其中一個的資料引數 echart文件內資料
+
                                     for(var i=0;i<params.length;i++){
-                                        html+='<span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:'+params[i].color+';"></span>'
-
-                                        html+=params[i].seriesName+" : "+params[i].value+" %<br>";
-
+                                        html+='<span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:'+params[i].color+';"></span>'//前面的圓點點
+                                        html+=params[i].seriesName+" : "+params[i].value+" %<br>" ;//標題 + %數
+                                        html+='<span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:'+params[i].color+';"></span>'  
+                                        // html+= params[i].dataIndex
+                                        let wealth = vm['yWealth'+[i+1]][dataIndex];
+                                        html+="Wealth : $ "+vm.toCurrency(wealth)+" TWD<br>"
                                     }
+                                    
                                     return html;
                                 }
-
+                                
                             },
                             legend: {
                                 x: 'right',
@@ -217,7 +253,15 @@
                                         width:2//设置线条粗细
                                     },
                                     showSymbol: false,
-                                    
+                                    // areaStyle: {
+                                    //     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                                    //         offset: 0,
+                                    //         color: 'rgb(108, 203, 219 )'
+                                    //     }, {
+                                    //         offset: 1,
+                                    //         color: 'rgb(108, 203, 219 )'
+                                    //     }])
+                                    // },
                                 },
                                 {
                                     name: 'MSCI World All Cap NR USD',
@@ -229,7 +273,7 @@
                                         width:2//设置线条粗细
                                     },
                                     showSymbol: false,
-
+                                    
                                 },
                             ]
                             
@@ -244,7 +288,108 @@
                         }
                         
 
+                    },
+                    clearData(){
+                        this.xData = [];
+                        this.yData1 = [];
+                        this.yData2 = [];
+                        this.yWealth1 = [];
+                        this.yWealth2 = [];
+                    },
+                    allData(){
+                        let vm = this;
+                        vm.xData = vm.xDataAll;
+                        vm.yData1 = vm.yData1All;
+                        vm.yData2 = vm.yData2All;
+                        vm.yWealth1 = vm.yWealth1All;
+                        vm.yWealth2 = vm.yWealth2All;
+                        vm.drawChart();
+                    },
+                    changeYear(value){
+                        let vm = this;
+                        let lastDay = vm.xDataAll[vm.xDataAll.length-1];//最後一天的日期
+                        let oneYAgo = moment(lastDay).subtract(value,'years').format('YYYY-MM-DD');
+                        console.log(oneYAgo)
+                        
+                        let startDate = [];
+                        let index = 0;
+                        this.clearData();
+                        
+                        this.xDataAll.forEach(function(e,i){
+                            if(e === oneYAgo){
+                                startDate = e;
+                                index = i;
+                            }
+                        })
+                        console.log(index, this.xDataAll.length)
+                        // console.log(this.xDataAll[index])
+                        for(let i= index; i<this.xDataAll.length; i++){
+                            console.log(vm.xDataAll[i])
+                            vm.xData.push(vm.xDataAll[i]);
+                            vm.yData1.push(vm.yData1All[i]);
+                            vm.yData2.push(vm.yData2All[i]);
+                            vm.yWealth1.push(vm.yWealth1All[i]);
+                            vm.yWealth2.push(vm.yWealth2All[i]);
+                        }
+                        this.drawChart();
+                    },
+                    changeMonth(value){
+                        let vm = this;
+                        let lastDay = vm.xDataAll[vm.xDataAll.length-1];//最後一天的日期
+                        let oneMAgo = moment(lastDay).subtract(value,'months').format('YYYY-MM-DD');
+                        // console.log(oneMAgo)
+                        let startDate = [];
+                        let index = 0;
+                        this.clearData();
+                        this.xDataAll.forEach(function(e,i){
+                            if(e === oneMAgo){
+                                startDate = e;
+                                index = i;
+                            }
+                        })
+                        for(let i= index; i<this.xDataAll.length; i++){
+                            // console.log(vm.xDataAll[i])
+                            vm.xData.push(vm.xDataAll[i]);
+                            vm.yData1.push(vm.yData1All[i]);
+                            vm.yData2.push(vm.yData2All[i]);
+                            vm.yWealth1.push(vm.yWealth1All[i]);
+                            vm.yWealth2.push(vm.yWealth2All[i]);
+                        }
+                        this.drawChart();
+                    },
+                    toCurrency(num){
+                        var parts = num.toString().split('.');
+                        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                        return parts.join('.');
                     }
+                },
+                watch:{
+                    selectYear(){
+                        let vm = this;
+                        let array = [];
+                        let index = [];
+                        this.clearData();
+                        this.xDataAll.forEach(function(e,i){
+                            if(moment(e).year() === vm.selectYear){
+                                // console.log(e,i)
+                                array.push(e)
+                                index.push(i)//抓到相對引數
+                            }
+                        })
+                        // console.log(array)
+                        // console.log(index)
+                        this.xData = array;
+                        
+
+                        index.forEach(function(i){
+                            vm.yData1.push(vm.yData1All[i])
+                            vm.yData2.push(vm.yData2All[i])
+                            vm.yWealth1.push(vm.yWealth1All[i])
+                            vm.yWealth2.push(vm.yWealth2All[i])
+                        })
+                        vm.drawChart();
+                    },
+                    
                 }
         })
     </script>
